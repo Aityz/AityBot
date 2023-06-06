@@ -10,25 +10,11 @@ import requests
 import asyncio
 import geocoder
 
+# These API Keys are fake and don't work
 
 openai.api_key = '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'
 key = 'MTAxOTg1MzQyNjg0NDI0MjAyMQ.Gyh6_2.1jMAntfp88Y5LMAY6ae-mtVkVME-A7xF35NBZc'
 
-#gpt for free key
-token = 'eyJhbGciOiJSUzI1NiIsImtpZCI6Imluc18yTzZ3UTFYd3dxVFdXUWUyQ1VYZHZ2bnNaY2UiLCJ0eXAiOiJKV1QifQ.eyJhenAiOiJodHRwczovL2FjY291bnRzLmZvcmVmcm9udC5haSIsImV4cCI6MTY4Mjk5OTU1MCwiaWF0IjoxNjgyOTk5NDkwLCJpc3MiOiJodHRwczovL2NsZXJrLmZvcmVmcm9udC5haSIsIm5iZiI6MTY4Mjk5OTQ4MCwic2lkIjoic2Vzc18yUERsTjl2YTNRNnJmdFZsV2I2OGdlWWVxQTQiLCJzdWIiOiJ1c2VyXzJQRGxOQzBodzhtSVlKdWZ3T2lUdHZjZEowWiJ9.PaeqzCiOyb7S8VwSN3BM_R6oRyv9w7VnC6x3FYwn5OP0ZTwfodpOMIRhahfhF7i7xgc145oALI3c9stLDdiAkl8OJ-RaGdxxXjsT6hOM0dUFDGeiwD83t1rjXEw_u_Pp_BZHKZOwFZiGxeNytPK_m5TJh4SGGhMpTNwKMFdaCWYHw19B6qbLRZkWo7WqUUMlTHhSB2Yd_vPpy_tY0-DvyLGzkFai_nINf4ImY_Oev6agUNtR2ma9Cm0IzW2tdtvVdgfXQCTh8zY-j7y4ObOaCNrqCapEr8sqI3Csz0hJ1ameruA2uDC6T1XIeQx_uTqzXQI85gYHM1LZimVlinRTUQ'
-"""
-from gpt4free import forefront
-token = forefront.Account.create(logging=False)
-print(token)
-# get a response
-for response in forefront.StreamingCompletion.create(
-	token=token,
-	prompt='hello world',
-	model='gpt-4'
-):
-    print(response.choices[0].text, end='')
-print("")
-"""
 intents = discord.Intents.all()
 client = discord.Client(intents=intents)
 bot = commands.Bot(command_prefix='/', intents=intents)
