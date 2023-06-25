@@ -3,8 +3,9 @@ Aityz's Discord Bot is a versatile bot, with a variety of use cases. Feel free t
 ## Features
 AityBot currently has the following features:
 - Reddit (or Kbin/Lemmy etc.) like Karma system (upvotes and downbotes and /karma to check total)
-- Geocoding support (/geocode for any location)
+- Geocoding Support (/geocode for any location)
 - Pokemon Loot Table (WIP)
+- OpenWeatherMap Support (/weather for weather)
 - NewsAPI Intergration (/news for headlines)
 - Integrations with Many APIs (WIP)
 - Gradio interconnectivity with Hugging Face Spaces
