@@ -1,7 +1,7 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-from confidential import TOKEN, NEWSAPI, OPENWEATHERMAP
+from confidential import TOKEN, NEWSAPI, OPENWEATHERMAP, REDDITCLIENT, REDDITSECRET
 import requests
 import geocoder
 import os
@@ -13,10 +13,12 @@ client = discord.Client(intents=intents)
 bot = commands.Bot(command_prefix='/', intents=intents)
 tree = app_commands.CommandTree(client)
 
+
 @client.event
 async def on_ready():
     print('Ready!')
     await tree.sync()
+
 
 @client.event
 async def on_reaction_add(reaction, user):
@@ -30,7 +32,8 @@ async def on_reaction_add(reaction, user):
         return
     elif user.id == reaction.message.author.id:
         print('id = author')
-        embed = discord.Embed(title="Don't Upvote/Downvote Yourself!", description='Just a friendly reminder not to upvote/downvote yourself.')
+        embed = discord.Embed(title="Don't Upvote/Downvote Yourself!",
+                              description='Just a friendly reminder not to upvote/downvote yourself.')
         await user.send(embed=embed)
     elif react == '⬆️':
         if os.path.exists(filename):
@@ -57,6 +60,7 @@ async def on_reaction_add(reaction, user):
                 f.write(str(0))
                 print('-1')
 
+
 @client.event
 async def on_message(message):
     if message.author == client.user:
@@ -79,10 +83,107 @@ async def on_message(message):
             await message.add_reaction('⬆️')
             await message.add_reaction('⬇️')
 
+
 @tree.command(name='userid', description='Get the User ID of Anyone')
 async def test(interaction: discord.Interaction, user: discord.User):
     embed = discord.Embed(title='User ID', description=f'User ID: {user.id}')
     await interaction.response.send_message(embed=embed)
+
+
+@tree.command(name='subreddit', description="Gets Reddit Posts. Limit: Amount of "
+                                            "Posts to show. Time: day/week etc Order: top, best, new")
+async def subreddit(interaction: discord.Interaction, subreddit: str, limit: int = 25, time: str = "day", order: str = "top"):
+    channel = interaction.channel
+    await interaction.response.send_message('Loading...')
+    url = f'https://www.reddit.com/r/{subreddit}/{order}.json?limit={limit}&t={time}'
+    request = requests.get(url, headers={'User-agent': 'Aityz/2.0'})
+    data = request.json()
+    children = data['data']['children']
+
+    i = 0
+
+    titles = []
+    flairs = []
+    scores = []
+    authors = []
+    nsfw = []
+    urls = []
+    ratios = []
+    previews = []
+    selftexts = []
+
+    for child in children:
+        try:
+            post = children[i]['data']
+        except Exception as e:
+            print('done!')
+            break
+        title = post['title']
+        flair = post['link_flair_css_class']
+        score = post['score']
+        author = post['author_fullname']
+        sfw = post['over_18']
+        url = post['url']
+        ratio = post['upvote_ratio']
+        selftext = post['selftext']
+        try:
+            preview = post['preview']
+        except Exception as e:
+            print(e)
+            preview = ''
+
+        titles.append(title)
+        flairs.append(flair)
+        scores.append(score)
+        authors.append(author)
+        nsfw.append(sfw)
+        urls.append(url)
+        ratios.append(ratio)
+        previews.append(preview)
+        selftexts.append(selftext)
+
+        i = i + 1
+
+    print(f'Length of titles list {len(titles)}')
+
+    titlelen = len(titles)
+
+    embeds = []
+    index = 0
+
+    for post in range(titlelen):
+        embed = discord.Embed(title=f'{titles[index]}',
+                              description=f'{selftexts[index]}\nScore: {scores[index]}\nAuthor: {authors[index]}\nURL: {urls[index]}\nUpvote Ratio {ratios[index]}')
+        embeds.append(embed)
+        index = index + 1
+
+    back = discord.ui.Button(label="Back", style=discord.ButtonStyle.green)
+    next = discord.ui.Button(label="Next", style=discord.ButtonStyle.red)
+
+    global current
+    current = 0
+    async def back_callback(interaction: discord.Interaction):
+        global current
+        current = current - 1
+        await embed_0.edit(embed=embeds[current])
+        await interaction.response.send_message('')
+
+    async def next_callback(interaction: discord.Interaction):
+        global current
+        current = current + 1
+        await embed_0.edit(embed=embeds[current])
+        await interaction.response.send_message('')
+
+    back.callback = back_callback
+    next.callback = next_callback
+
+    view = discord.ui.View()
+
+    view.add_item(back)
+    view.add_item(next)
+
+    embed_0 = await channel.send(embed=embeds[0], view=view)
+
 
 
 
@@ -99,9 +200,11 @@ async def weather(interaction: discord.Interaction, loc: str):
     else:
         await interaction.response.send_message("Error: Unable to fetch weather data.")
 
-    embed = discord.Embed(title='Weather', description=f'Location: {geo["address"]}\nTemperature: {round(data["main"]["temp"] - 273.15, 2)}\nMinimum Temperature: {round(data["main"]["temp_min"] - 273.15, 2)}\nMaximum Temperature: {round(data["main"]["temp_max"] - 273.15, 2)}\nDescription: {data["weather"][0]["description"]}')
+    embed = discord.Embed(title='Weather',
+                          description=f'Location: {geo["address"]}\nTemperature: {round(data["main"]["temp"] - 273.15, 2)}\nMinimum Temperature: {round(data["main"]["temp_min"] - 273.15, 2)}\nMaximum Temperature: {round(data["main"]["temp_max"] - 273.15, 2)}\nDescription: {data["weather"][0]["description"]}')
 
     await interaction.response.send_message(embed=embed)
+
 
 @tree.command(name='news', description='Get the headlines from the US!')
 async def news(interaction: discord.Interaction):
@@ -127,18 +230,22 @@ async def news(interaction: discord.Interaction):
 
     for index, title in enumerate(titles):
         embed.add_field(name=f"{index + 1}", value=title, inline=False)
+
     await interaction.response.send_message(embed=embed)
+
 
 @tree.command(name='gen1', description="Catch a Generation 1 Pokemon!")
 async def gen1(interaction: discord.Interaction):
     pokemon = select_pokemon(GEN1_LOOT)
     embed = discord.Embed(title='Your Catch', description=f'You Caught {pokemon}')
     await interaction.response.send_message(embed=embed)
+
+
 @tree.command(name='karma', description='Check your Karma!')
 async def karma(interaction: discord.Interaction, user: discord.User = None):
     if user is not None:
         filename = f'{user.id}userkarma.txt'
-    
+
     try:
         with open(filename, 'r') as f:
             karma = int(f.read())
@@ -148,29 +255,39 @@ async def karma(interaction: discord.Interaction, user: discord.User = None):
         embed = discord.Embed(title='Error', description='That user has not yet started Karma!')
         await interaction.response.send_message(embed=embed)
 
+
 @tree.command(name='geocode', description="Geocode any location using ArcGIS.")
 async def geocode(interaction: discord.Interaction, location: str):
     g = geocoder.arcgis(location)
     g = g.json
-    embed = discord.Embed(title="Geocoder Results", description=f"Location: {g['address']}\nLatitude: {g['lat']}\nLongitude: {g['lng']}")
+    embed = discord.Embed(title="Geocoder Results",
+                          description=f"Location: {g['address']}\nLatitude: {g['lat']}\nLongitude: {g['lng']}")
     await interaction.response.send_message(embed=embed)
+
 
 @tree.command(name="ping", description="Pong!")
 async def ping(interaction: discord.Interaction):
     embed = discord.Embed(title="PONG!", description=f"Pong!")
     await interaction.response.send_message(embed=embed)
 
+
 @tree.command(name="help", description="Get help on how to use AityBot")
 async def help(interaction: discord.Interaction):
-    embed = discord.Embed(title="AityBot Tutorial", description="Welcome to AityBot! AityBot is a multipurpose bot made for many different situations!")
+    embed = discord.Embed(title="AityBot Tutorial",
+                          description="Welcome to AityBot! AityBot is a multipurpose bot made for many different situations!")
     commandshelpbutton = discord.ui.Button(label="Commands", style=discord.ButtonStyle.blurple)
     settingupbutton = discord.ui.Button(label="Setting Up", style=discord.ButtonStyle.green)
+
     async def commands_callback(interaction):
-        commandsembed = discord.Embed(title="AityBot Commands", description="AityBot has many different commands. Here is a full list of all of them, and a brief description")
+        commandsembed = discord.Embed(title="AityBot Commands",
+                                      description="AityBot has many different commands. Here is a full list of all of them, and a brief description")
         await interaction.response.send_message(embed=commandsembed)
+
     async def settingup_callback(interaction):
-        settingupembed = discord.Embed(title="Setting Up AityBot", description="Setting up AityBot is easy! All you have to do is add AityBot to your server, and then you can use the commands! However to get more specific settings, use /setup")
+        settingupembed = discord.Embed(title="Setting Up AityBot",
+                                       description="Setting up AityBot is easy! All you have to do is add AityBot to your server, and then you can use the commands! However to get more specific settings, use /setup")
         await interaction.response.send_message(embed=settingupembed)
+
     commandshelpbutton.callback = commands_callback
     settingupbutton.callback = settingup_callback
     view = discord.ui.View()
@@ -178,15 +295,16 @@ async def help(interaction: discord.Interaction):
     view.add_item(commandshelpbutton)
     await interaction.response.send_message(embed=embed, view=view)
 
+
 @tree.command(name='gpt2eli5', description='Use a Casual LLM trained by Aityz (DistilGPT2 on Eli5 Dataset)')
 async def gpt2eli5(interaction: discord.Interaction, prompt: str, max_tokens: int = 100):
     c = interaction.channel
     await interaction.response.send_message('Loading')
     client = Client("https://aityz-aityz-model-eli5.hf.space/")
     result = client.predict(
-				prompt,	# str representing input in 'input' Textbox component
-				max_tokens,	# int | float representing input in 'maxtokens' Slider component
-				api_name="/predict"
+        prompt,  # str representing input in 'input' Textbox component
+        max_tokens,  # int | float representing input in 'maxtokens' Slider component
+        api_name="/predict"
     )
     embed = discord.Embed(title='Result', description=result)
     await c.send(embed=embed)
@@ -196,29 +314,35 @@ async def gpt2eli5(interaction: discord.Interaction, prompt: str, max_tokens: in
 async def setup(interaction: discord.Interaction):
     embed = discord.Embed(title='Setup AityBot!', description='Time to tune AityBot to your liking!')
     config = discord.ui.Button(label='Karma')
+
     async def ph1_callback(interaction):
         karmaembed = discord.Embed(title='Karma Settings!', description='Here you can enable or disable Karma!')
         karmaview = discord.ui.View()
         karmatrue = discord.ui.Button(label='Enable')
         karmafalse = discord.ui.Button(label='Disable')
+
         async def true(interaction):
             file = str(interaction.guild.id) + 'karma.txt'
             with open(file, 'w') as f:
                 f.write(str(1))
             await interaction.response.send_message('Done!')
+
         async def false(interaction):
             file = str(interaction.guild.id) + 'karma.txt'
             with open(file, 'w') as f:
                 f.write(str(0))
             await interaction.response.send_message('Done!')
+
         karmatrue.callback = true
         karmafalse.callback = false
-        karmaview.add_item(karmatrue)  
-        karmaview.add_item(karmafalse)    
+        karmaview.add_item(karmatrue)
+        karmaview.add_item(karmafalse)
         await interaction.response.send_message(embed=karmaembed, view=karmaview)
+
     config.callback = ph1_callback
     view = discord.ui.View()
     view.add_item(config)
     await interaction.response.send_message(embed=embed, view=view)
+
 
 client.run(TOKEN)

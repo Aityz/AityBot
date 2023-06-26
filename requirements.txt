@@ -1,3 +1,5 @@
 geocoder
 discord
-gradio_clinet
+gradio_client
+requests
+praw
